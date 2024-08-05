@@ -59,11 +59,11 @@ Note that the above code is the minimum needed, but there are additional helper 
 
 Additionally, you can reference extension packages that provide mocks for other commonly used dependencies:
 
-- `Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer`
-- 
-- `Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos`
-- 
-- `Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql`
+- [`Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer`](../Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer/README.md)
+
+- [`Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos`](../Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos/README.md)
+
+- [`Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql`](../Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql/README.md)
 
 See below for a complete example:
 
@@ -166,7 +166,7 @@ See below for a complete example:
 
 Since these are integration tests, they test the code like a client would by making requests and inspecting the result. However, it is often useful to be able to 
 see what the server is doing and step through the code. Since the tests and the functions host run in two (or three) different processes, that can be tricky.
-The solution is the `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess` package. [See that README for more information](..\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess\README.md).
+The solution is the `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess` package. [See that README for more information](../Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess/README.md).
 
 ## Configuring for CI/CD
 
@@ -202,4 +202,4 @@ Note that in order to use the CosmosDb emulator in a DevOps pipeline, you also h
 
 ## Authoring extensions
 
-Information about how to author your own extensions [can be found in the Microsoft.Learn.AzureFunctionsTesting.Core README](..\Microsoft.Learn.AzureFunctionsTesting.Core\README.md).
+Information about how to author your own extensions [can be found in the Microsoft.Learn.AzureFunctionsTesting.Core README](../Microsoft.Learn.AzureFunctionsTesting.Core/README.md).
