@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting", "Microsoft.Learn.AzureFunctionsTesting\Microsoft.Learn.AzureFunctionsTesting.csproj", "{43ECD3DC-2787-4A01-AB98-ED48E9BB9090}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Core", "Microsoft.Learn.AzureFunctionsTesting.Core\Microsoft.Learn.AzureFunctionsTesting.Core.csproj", "{1A183FD5-6B93-4035-97DF-AED1C2D31BCA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos", "Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos\Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos.csproj", "{241BB224-4802-4E68-99DB-36F911EFEC2B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer", "Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer\Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer.csproj", "{AED121CB-E56C-4CD7-8DE7-910309FBC36C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sample", "Sample", "{D76980C4-4E11-4E51-B95A-B473DB6CAE57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyFunctionApp", "Sample\MyFunctionApp\MyFunctionApp.csproj", "{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.MyFunctionApp", "Sample\Tests.MyFunctionApp\Tests.MyFunctionApp.csproj", "{FA63ED28-B655-4317-8421-952E1C2D54D7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql", "Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql\Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql.csproj", "{020AB461-DE29-4733-B556-ED1A7B143170}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.csproj", "{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core.csproj", "{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43ECD3DC-2787-4A01-AB98-ED48E9BB9090}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43ECD3DC-2787-4A01-AB98-ED48E9BB9090}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43ECD3DC-2787-4A01-AB98-ED48E9BB9090}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43ECD3DC-2787-4A01-AB98-ED48E9BB9090}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A183FD5-6B93-4035-97DF-AED1C2D31BCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A183FD5-6B93-4035-97DF-AED1C2D31BCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A183FD5-6B93-4035-97DF-AED1C2D31BCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A183FD5-6B93-4035-97DF-AED1C2D31BCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{241BB224-4802-4E68-99DB-36F911EFEC2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{241BB224-4802-4E68-99DB-36F911EFEC2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{241BB224-4802-4E68-99DB-36F911EFEC2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{241BB224-4802-4E68-99DB-36F911EFEC2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AED121CB-E56C-4CD7-8DE7-910309FBC36C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AED121CB-E56C-4CD7-8DE7-910309FBC36C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AED121CB-E56C-4CD7-8DE7-910309FBC36C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AED121CB-E56C-4CD7-8DE7-910309FBC36C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA63ED28-B655-4317-8421-952E1C2D54D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA63ED28-B655-4317-8421-952E1C2D54D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA63ED28-B655-4317-8421-952E1C2D54D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA63ED28-B655-4317-8421-952E1C2D54D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{020AB461-DE29-4733-B556-ED1A7B143170}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{020AB461-DE29-4733-B556-ED1A7B143170}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{020AB461-DE29-4733-B556-ED1A7B143170}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{020AB461-DE29-4733-B556-ED1A7B143170}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F04784FF-7BC9-49AA-8EE0-6B6A543FE4F6} = {D76980C4-4E11-4E51-B95A-B473DB6CAE57}
+		{FA63ED28-B655-4317-8421-952E1C2D54D7} = {D76980C4-4E11-4E51-B95A-B473DB6CAE57}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AECAB305-13BF-4DA6-AE05-0BE7F3A02DED}
+	EndGlobalSection
+EndGlobal

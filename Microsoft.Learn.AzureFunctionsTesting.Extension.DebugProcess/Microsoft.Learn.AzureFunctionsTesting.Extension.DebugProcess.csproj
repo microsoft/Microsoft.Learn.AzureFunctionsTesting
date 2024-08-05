@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess</Title>
+    <Authors>Learn Engineers</Authors>
+    <Description>An extension for the Microsoft.Learn.AzureFunctionsTesting framework to allow stepping into debugged tests across processes.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="envdte80" Version="17.10.40170" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Learn.AzureFunctionsTesting.Core\Microsoft.Learn.AzureFunctionsTesting.Core.csproj" />
+    <ProjectReference Include="..\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core.csproj" />
+  </ItemGroup>
+
+</Project>

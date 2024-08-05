@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core</Title>
+    <Authors>Learn Engineers</Authors>
+    <Description>This package works in conjuction with `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess` to enable stepping through function
+code when debugging tests.
+
+This package is for use in the function app itself (not the test project).</Description>
+  </PropertyGroup>
+
+</Project>

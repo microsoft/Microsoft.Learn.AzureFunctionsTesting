@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Microsoft.Learn.AzureFunctionsTesting.Core</Title>
+    <Authors>Learn Engineering</Authors>
+    <Description>This package contains the core interfaces used by extension authors to create plugins for the Microsoft.Learn.AzureFunctionsTesting test framework.</Description>
+  </PropertyGroup>
+
+</Project>

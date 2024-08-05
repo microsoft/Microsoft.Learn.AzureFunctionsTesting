@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos</Title>
+    <Authors>Learn Engineers</Authors>
+    <Description>An extension for the Microsoft.Learn.AzureFunctionsTesting framework to allow mocking Cosmos DB.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.42.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Learn.AzureFunctionsTesting.Core\Microsoft.Learn.AzureFunctionsTesting.Core.csproj" />
+  </ItemGroup>
+
+</Project>
