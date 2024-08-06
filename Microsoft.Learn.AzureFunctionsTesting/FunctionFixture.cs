@@ -1,5 +1,4 @@
 ﻿using Microsoft.Learn.AzureFunctionsTesting.Core;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,6 +14,11 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 {
     public class FunctionFixture<T> : IFunctionFixture, IAsyncLifetime where T : IFunctionTestStartup
     {
+        static readonly JsonSerializerOptions EventGridJsonSerializerOptions = new()
+        {
+            Converters = { new CustomDateTimeConverter("yyyy-MM-ddTHH:mm:ssZ") }
+        };
+
         readonly FunctionTestConfigurationBuilder builder;
         Process? hostProcess;
 
@@ -171,10 +176,10 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
         public async Task TriggerNonHttpFunctionAsync(string functionName, object? payload = null)
         {
-            var json = payload != null ? JsonConvert.SerializeObject(payload) : null;
+            var json = payload != null ? JsonSerializer.Serialize(payload) : null;
             var request = new HttpRequestMessage(HttpMethod.Post, $"admin/functions/{functionName}")
             {
-                Content = new StringContent(JsonConvert.SerializeObject(new { input = json }), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(new { input = json }), Encoding.UTF8, "application/json")
             };
             var response = await Client.SendAsync(request);
             if (response.StatusCode != HttpStatusCode.Accepted)
@@ -199,7 +204,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
             var message = new HttpRequestMessage(HttpMethod.Post, $"runtime/webhooks/EventGrid?functionName={triggerFunctionName}")
             {
-                Content = new StringContent(JsonConvert.SerializeObject(requestBody, new JsonSerializerSettings { DateFormatString = "yyyy-MM-ddTHH:mm:ssZ" }), encoding: null, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(requestBody, EventGridJsonSerializerOptions), encoding: null, "application/json")
             };
             message.Headers.TryAddWithoutValidation("aeg-event-type", "Notification");
 
