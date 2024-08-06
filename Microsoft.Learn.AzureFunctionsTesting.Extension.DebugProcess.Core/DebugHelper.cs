@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core
 {
+    [SupportedOSPlatform("windows")]
     public static class DebugHelper
     {
         public static void WaitForDebuggerToAttach()
@@ -13,7 +15,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core
                 SendSignal(DebuggerConstants.SignalName);
                 while (!Debugger.IsAttached)
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
                 }
             }
         }
