@@ -4,7 +4,7 @@ This library provides a helpful framework that allows you to test your Azure Fun
 
 ## Usage
 
-1. Add a reference to the `Microsoft.Learn.AzureFunctionsTesting` Nuget package to your integration test project.
+1. Add a reference to the `Microsoft.Learn.AzureFunctionsTesting` NuGet package to your integration test project.
 2. Add the required assembly attributes and a class that implements `IFunctionTestStartup`. You can copy and paste the code below and then modify as necessary:
 
 		using Microsoft.Azure.Cosmos;

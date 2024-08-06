@@ -4,7 +4,7 @@ If your Azure Functions app uses SqlServer, you can use this package to make moc
 
 ## Prerequisites
 
-- [LocalDB](https://docs.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb?view=sql-server-ver15) installed and running]
+- [LocalDB](https://docs.microsoft.com/en-us/sql/database-engine/configure-windows/sql-server-express-localdb?view=sql-server-ver15) installed and running
 
 ## Setup
 
