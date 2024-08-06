@@ -3,14 +3,16 @@ using Microsoft.SqlServer.Dac;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
-using static System.Text.RegularExpressions.RegexOptions;
 
 namespace Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql
 {
     // Borrows liberally from https://github.com/joshclark/TemporaryDb
     // But often the initial DB creation can timeout and that library does not allow setting the connection timeout
-    public class LocalDatabase : IDisposable
+    public partial class LocalDatabase : IDisposable
     {
+        [GeneratedRegex(@"^\s*GO\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline, "en-US")]
+        private static partial Regex SplitOnGoRegex();
+
         private readonly string dbName;
         private readonly string fileName;
         private bool isDisposed;
@@ -50,8 +52,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql
         {
             string script = File.ReadAllText(filePath);
 
-            // split script on GO command
-            var commandStrings = Regex.Split(script, @"^\s*GO\s*$", Multiline | IgnoreCase);
+            var commandStrings = SplitOnGoRegex().Split(script);
             using var connection = new SqlConnection(ConnectionString);
 
             connection.Open();
