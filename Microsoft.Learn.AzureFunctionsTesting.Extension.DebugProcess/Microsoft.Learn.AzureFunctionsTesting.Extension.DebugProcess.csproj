@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess</Title>
-    <Authors>Learn Engineers</Authors>
     <Description>An extension for the Microsoft.Learn.AzureFunctionsTesting framework to allow stepping into debugged tests across processes.</Description>
   </PropertyGroup>
 

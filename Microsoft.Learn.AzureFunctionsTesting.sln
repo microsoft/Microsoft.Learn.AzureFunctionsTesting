@@ -19,9 +19,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.MyFunctionApp", "Samp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql", "Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql\Microsoft.Learn.AzureFunctionsTesting.Extension.MockSql.csproj", "{020AB461-DE29-4733-B556-ED1A7B143170}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.csproj", "{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.csproj", "{A9503B78-7817-4ED2-ABF4-C20AD6BFBBA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core.csproj", "{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core", "Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core\Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core.csproj", "{8E1587EC-7E83-49DB-B2A6-9ED9E54363E7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Versioning", "Versioning", "{3C665025-B27A-470B-B779-338BD7EC64C1}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

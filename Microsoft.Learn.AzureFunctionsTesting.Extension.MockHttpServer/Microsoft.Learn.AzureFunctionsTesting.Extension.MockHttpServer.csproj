@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer</Title>
-    <Authors>Learn Engineers</Authors>
     <Description>An extension for the Microsoft.Learn.AzureFunctionsTesting framework to allow mocking any HTTP server.</Description>
   </PropertyGroup>
 

@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.MockCosmos</Title>
-    <Authors>Learn Engineers</Authors>
     <Description>An extension for the Microsoft.Learn.AzureFunctionsTesting framework to allow mocking Cosmos DB.</Description>
   </PropertyGroup>
 

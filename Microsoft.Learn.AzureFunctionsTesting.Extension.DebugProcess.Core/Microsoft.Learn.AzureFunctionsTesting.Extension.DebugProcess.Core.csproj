@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess.Core</Title>
-    <Authors>Learn Engineers</Authors>
     <Description>This package works in conjuction with `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess` to enable stepping through function
 code when debugging tests.
 

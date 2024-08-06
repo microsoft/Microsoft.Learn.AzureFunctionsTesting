@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Microsoft.Learn.AzureFunctionsTesting</Title>
-    <Authors>Learn Engineering</Authors>
     <Description>This library provides a helpful framework that allows you to test your Azure Functions Http Triggers in a manner similar to how ASP.NET Core integration testing works.</Description>
   </PropertyGroup>
 
