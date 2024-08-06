@@ -168,6 +168,8 @@ Since these are integration tests, they test the code like a client would by mak
 see what the server is doing and step through the code. Since the tests and the functions host run in two (or three) different processes, that can be tricky.
 The solution is the `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess` package. [See that README for more information](Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProcess/README.md).
 
+**Note:** At this time the only supported platform for the debugging functionality is Windows.
+
 ## Configuring for CI/CD
 
 All of the functionality works the same way when ran in an Azure DevOps pipeline. The only difference is the configuration of the function app path.
