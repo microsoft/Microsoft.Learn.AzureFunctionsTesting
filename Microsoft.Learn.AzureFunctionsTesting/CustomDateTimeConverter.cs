@@ -6,11 +6,11 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 {
     public class CustomDateTimeConverter : JsonConverter<DateTime>
     {
-        private readonly string _format;
+        private readonly string format;
 
         public CustomDateTimeConverter(string format)
         {
-            _format = format;
+            this.format = format;
         }
 
         public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -18,7 +18,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting
             string? dateString = reader.GetString();
             if (dateString != null)
             {
-                return DateTime.ParseExact(dateString, _format, null);
+                return DateTime.ParseExact(dateString, format, null);
             }
             else
             {
@@ -28,7 +28,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.ToString(_format));
+            writer.WriteStringValue(value.ToString(format));
         }
     }
 }
