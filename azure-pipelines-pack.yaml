@@ -1,0 +1,139 @@
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: Engineering/DevOpsBuildTemplates
+      ref: 'refs/heads/live'
+
+trigger:
+- main
+
+variables:
+  vmImage: 'windows-2022'
+  buildConfiguration: 'Release'
+  dotNetVersion: '8.0.x'
+  solutionPath: ''
+  nugetConfigPath: ''
+  pathToPublish: $(Build.ArtifactStagingDirectory)
+  FunctionsHostExePath: 'C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe'
+
+stages:
+- stage: Build
+  jobs:
+  - job: 'BuildAndTest'
+    pool:
+      vmImage: $(vmImage)
+
+    steps:
+    - template: stages/steps/dotnet.yml@templates
+      parameters:
+        version: '6.0.x'
+
+    - template: stages/steps/dotnet.yml@templates
+      parameters:
+        version: '8.0.x'
+
+    - template: stages/steps/nuget.yml@templates
+      parameters:
+        solutionPath: $(solutionPath)
+        nugetConfigPath: $(nugetConfigPath)
+
+    - template: stages/steps/buildProjects.yml@templates
+      parameters:
+        solutionPath: $(solutionPath)
+        buildConfiguration: $(buildConfiguration)
+
+    - task: Npm@1
+      displayName: print npm path
+      inputs:
+        command: custom
+        verbose: false
+        customCommand: 'root -g'
+
+    - task: Npm@1
+      displayName: Install Azure Functions Core Tools v4
+      inputs:
+        command: custom
+        verbose: false
+        customCommand: 'install -g azure-functions-core-tools@4'
+
+    - template: stages/steps/cosmosDbEmulator.yml@templates
+
+    - template: stages/steps/storageEmulator.yml@templates
+
+    - template: stages/steps/test.yml@templates
+      parameters:
+        solutionPath: $(solutionPath)
+        buildConfiguration: $(buildConfiguration)
+
+    # Authenticode sign all the DLLs with the Microsoft certificate
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@2
+      displayName: 'ESRP CodeSigning: Authenticode'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: $(solutionPath)
+        Pattern: 'Microsoft.Learn.*.dll'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+          [
+            {
+                "KeyCode": "CP-230012",
+                "OperationCode": "SigntoolSign",
+                "Parameters": {
+                    "OpusName": "Microsoft",
+                    "OpusInfo": "http://www.microsoft.com",
+                    "FileDigest": "/fd \"SHA256\"",
+                    "PageHash": "/NPH",
+                    "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+                },
+                "ToolName": "sign",
+                "ToolVersion": "1.0"
+              },
+              {
+                  "KeyCode": "CP-230012",
+                  "OperationCode": "SigntoolVerify",
+                  "Parameters": {},
+                  "ToolName": "sign",
+                  "ToolVersion": "1.0"
+              }
+          ]
+
+    - task: DotNetCoreCLI@2
+      displayName: Build NuGet packages
+      inputs:
+        command: 'pack'
+        packagesToPack: '$(solutionPath)Src/**/*.csproj'
+        configuration: '$(buildConfiguration)'
+        packDirectory: '$(pathToPublish)'
+        nobuild: true
+
+    # Digitally sign all the nuget packages with the Microsoft certificate.
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@2
+      displayName: 'ESRP CodeSigning: Nupkg'
+      inputs:
+        ConnectedServiceName: 'ESRP Service'
+        FolderPath: $(pathToPublish)
+        Pattern: '*.nupkg'
+        signConfigType: inlineSignParams
+        inlineOperation: |
+          [
+            {
+              "KeyCode": "CP-401405",
+              "OperationCode": "NuGetSign",
+              "Parameters": {},
+              "ToolName": "sign",
+              "ToolVersion": "1.0"
+            },
+            {
+              "KeyCode": "CP-401405",
+              "OperationCode": "NuGetVerify",
+              "Parameters": {},
+              "ToolName": "sign",
+              "ToolVersion": "1.0"
+            }
+          ]
+
+    - template: stages/steps/publishArtifact.yml@templates
+      parameters:
+        artifactName: 'nugets'
+        pathToPublish: $(pathToPublish)
