@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer
@@ -105,7 +105,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer
         {
             StatusCode = statusCode;
             Headers["Content-Type"] = "application/json";
-            var json = JsonConvert.SerializeObject(obj);
+            var json = JsonSerializer.Serialize(obj);
             Body = Encoding.UTF8.GetBytes(json);
         }
     }
