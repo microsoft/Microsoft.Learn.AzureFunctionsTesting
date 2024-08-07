@@ -13,7 +13,6 @@ variables:
   buildConfiguration: 'Release'
   dotNetVersion: '8.0.x'
   solutionPath: ''
-  nugetConfigPath: ''
   pathToPublish: $(Build.ArtifactStagingDirectory)
   FunctionsHostExePath: 'C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe'
 
@@ -32,11 +31,6 @@ stages:
     - template: stages/steps/dotnet.yml@templates
       parameters:
         version: '8.0.x'
-
-    - template: stages/steps/nuget.yml@templates
-      parameters:
-        solutionPath: $(solutionPath)
-        nugetConfigPath: $(nugetConfigPath)
 
     - template: stages/steps/buildProjects.yml@templates
       parameters:
@@ -67,10 +61,15 @@ stages:
         buildConfiguration: $(buildConfiguration)
 
     # Authenticode sign all the DLLs with the Microsoft certificate
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@2
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@5
       displayName: 'ESRP CodeSigning: Authenticode'
       inputs:
-        ConnectedServiceName: 'ESRP Service'
+        ConnectedServiceName: 'Learn ESRP Code Signing'
+        AppRegistrationClientId: '1a99b436-655d-4945-bf0f-9058f4e193fb' 
+        AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346' 
+        AuthAKVName: 'learn-codesign-vault' 
+        AuthCertName: 'AuthCert' 
+        AuthSignCertName: 'RequestSigningCert'
         FolderPath: $(solutionPath)
         Pattern: 'Microsoft.Learn.*.dll'
         signConfigType: inlineSignParams
@@ -102,16 +101,21 @@ stages:
       displayName: Build NuGet packages
       inputs:
         command: 'pack'
-        packagesToPack: '$(solutionPath)Src/**/*.csproj'
+        packagesToPack: '$(solutionPath)**/Microsoft.Learn.AzureFunctionsTesting*.csproj'
         configuration: '$(buildConfiguration)'
         packDirectory: '$(pathToPublish)'
         nobuild: true
 
     # Digitally sign all the nuget packages with the Microsoft certificate.
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@2
+    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@5
       displayName: 'ESRP CodeSigning: Nupkg'
       inputs:
-        ConnectedServiceName: 'ESRP Service'
+        ConnectedServiceName: 'Learn ESRP Code Signing'
+        AppRegistrationClientId: '1a99b436-655d-4945-bf0f-9058f4e193fb' 
+        AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346' 
+        AuthAKVName: 'learn-codesign-vault' 
+        AuthCertName: 'AuthCert' 
+        AuthSignCertName: 'RequestSigningCert'
         FolderPath: $(pathToPublish)
         Pattern: '*.nupkg'
         signConfigType: inlineSignParams
