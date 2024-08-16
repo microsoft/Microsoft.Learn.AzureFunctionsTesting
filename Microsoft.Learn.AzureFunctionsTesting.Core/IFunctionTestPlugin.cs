@@ -7,6 +7,6 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Core
     {
         Task InitializeAsync(Dictionary<string, string> environmentVars);
 
-        Task DisposeAsync();
+        Task DisposeAsync() => Task.CompletedTask;
     }
 }
