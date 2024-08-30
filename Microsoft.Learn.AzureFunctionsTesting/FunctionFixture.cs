@@ -69,13 +69,13 @@ namespace Microsoft.Learn.AzureFunctionsTesting
             Console.WriteLine($"CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
             var envVars = new Dictionary<string, string>();
-            foreach (var action in builder.ConfigureEnvironmentVariablesActions)
-            {
-                action?.Invoke(envVars);
-            }
             foreach (var plugin in builder.GetPlugins())
             {
                 await plugin.InitializeAsync(envVars);
+            }
+            foreach (var action in builder.ConfigureEnvironmentVariablesActions)
+            {
+                action?.Invoke(envVars);
             }
 
             envVars["IS_FUNCTIONS_TEST"] = "true";
