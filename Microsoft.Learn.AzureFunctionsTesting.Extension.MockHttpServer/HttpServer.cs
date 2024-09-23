@@ -101,6 +101,10 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Extension.MockHttpServer
         public IDictionary<string, StringValues> Headers { get; } = new Dictionary<string, StringValues>();
         public byte[]? Body { get; set; }
 
+        /// <summary>
+        /// Helper to return a serialized object as JSON with the correct content type header set.
+        /// Note: This uses System.Text.Json with default settings as the serializer. If you need more control over the serialization, you can serialize the object yourself and set the response properties directly.
+        /// </summary>
         public void FromJson(object obj, int statusCode = 200)
         {
             StatusCode = statusCode;
