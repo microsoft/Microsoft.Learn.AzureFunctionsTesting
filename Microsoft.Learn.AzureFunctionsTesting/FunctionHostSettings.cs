@@ -43,6 +43,9 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 // global npm folder for CI builds
                 pathsToTry.Add("C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe");
 
+                // homebrew folder for mac
+                pathsToTry.Add("/opt/homebrew/bin/func");
+
                 foreach (var pathToTry in pathsToTry)
                 {
                     if (File.Exists(pathToTry))
