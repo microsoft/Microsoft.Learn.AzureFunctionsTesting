@@ -64,5 +64,15 @@ namespace MyFunctionApp
             await response.WriteAsJsonAsync(true);
             return response;
         }
+
+        [Function("AuthRequired")]
+        public HttpResponseData AuthRequired([HttpTrigger(AuthorizationLevel.Function, "get", Route = "auth-required")] HttpRequestData req)
+        {
+            logger.LogInformation("AuthRequired called");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+
+            return response;
+        }
     }
 }
