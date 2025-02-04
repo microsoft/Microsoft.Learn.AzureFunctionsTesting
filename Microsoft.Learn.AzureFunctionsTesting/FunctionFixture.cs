@@ -92,7 +92,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 StartInfo =
                 {
                     FileName = functionsHostExePath,
-                    Arguments = $"start -p {builder.Port}",
+                    Arguments = $"start -p {builder.Port} {(builder.EnableAuth ? "--enableAuth" : null)}",
                     WorkingDirectory = functionAppPath
                 }
             };

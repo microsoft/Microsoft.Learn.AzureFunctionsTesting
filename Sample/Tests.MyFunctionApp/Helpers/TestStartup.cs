@@ -30,6 +30,7 @@ namespace Tests.MyFunctionApp.Helpers
             // [Optional] You can set these values if necessary
             //builder.SetStartupTimeout(180);
             //builder.SetFunctionAppPort(7081);
+            //builder.DisableFunctionsAuth();
 
             // -- Set up any mocks or other test run configuration as required --
 

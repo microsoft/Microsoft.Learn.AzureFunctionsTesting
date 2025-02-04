@@ -16,6 +16,8 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
         internal string? FunctionAppPath { get; set; } = null;
 
+        internal bool EnableAuth { get; set; } = true;
+
         internal int Port { get; set; } = 7071;
 
         internal int StartupTimeout { get; set; } = 15;
@@ -36,6 +38,10 @@ namespace Microsoft.Learn.AzureFunctionsTesting
             return (T?)plugin;
         }
 
+        public void DisableFunctionsAuth()
+        {
+            this.EnableAuth = false;
+        }
 
         public void SetFunctionAppPath(string path)
         {
