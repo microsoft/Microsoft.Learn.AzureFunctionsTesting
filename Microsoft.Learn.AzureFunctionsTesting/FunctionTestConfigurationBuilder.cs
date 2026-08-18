@@ -20,6 +20,8 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
         internal int Port { get; set; } = 7071;
 
+        internal string Address { get; set; } = "0.0.0.0";
+
         internal int StartupTimeout { get; set; } = 15;
 
         internal List<Action<Dictionary<string, string>>> ConfigureEnvironmentVariablesActions { get; } = new();
@@ -51,6 +53,11 @@ namespace Microsoft.Learn.AzureFunctionsTesting
         public void SetFunctionAppPort(int port)
         {
             this.Port = port;
+        }
+
+        public void SetFunctionAppAddress(string address)
+        {
+            this.Address = address;
         }
 
         public void SetStartupTimeout(int seconds)

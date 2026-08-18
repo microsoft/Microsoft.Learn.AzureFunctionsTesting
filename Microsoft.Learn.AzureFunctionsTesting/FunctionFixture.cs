@@ -92,7 +92,9 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 StartInfo =
                 {
                     FileName = functionsHostExePath,
-                    Arguments = $"start -p {builder.Port} {(builder.EnableAuth ? "--enableAuth" : null)}",
+                    // --address requires Azure Functions Core Tools 4.13.0 or later, which changed the
+                    // default bind address from 0.0.0.0 to the IPv4 loopback address.
+                    Arguments = $"start -p {builder.Port} --address {builder.Address} {(builder.EnableAuth ? "--enableAuth" : null)}",
                     WorkingDirectory = functionAppPath
                 }
             };
