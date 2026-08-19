@@ -24,6 +24,10 @@ stages:
       vmImage: $(vmImage)
 
     steps:
+    - template: stages/steps/cosmosDbEmulator.yml@templates
+
+    - template: stages/steps/storageEmulator.yml@templates
+
     - template: stages/steps/dotnet.yml@templates
       parameters:
         version: '6.0.x'
@@ -51,9 +55,9 @@ stages:
         verbose: false
         customCommand: 'install -g azure-functions-core-tools@4'
 
-    - template: stages/steps/cosmosDbEmulator.yml@templates
+    - template: stages/steps/storageEmulatorCheck.yml@templates
 
-    - template: stages/steps/storageEmulator.yml@templates
+    - template: stages/steps/cosmosDbEmulatorCheck.yml@templates
 
     - template: stages/steps/test.yml@templates
       parameters:
