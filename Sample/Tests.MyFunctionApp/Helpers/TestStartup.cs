@@ -28,7 +28,7 @@ namespace Tests.MyFunctionApp.Helpers
             builder.SetFunctionAppPath($"..\\..\\..\\..\\MyFunctionApp\\bin\\{buildConfig}\\net8.0");
 
             // [Optional] You can set these values if necessary
-            //builder.SetStartupTimeout(180);
+            builder.SetStartupTimeout(180);
             //builder.SetFunctionAppPort(7081);
             //builder.DisableFunctionsAuth();
 

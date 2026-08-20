@@ -55,6 +55,11 @@ stages:
         verbose: false
         customCommand: 'install -g azure-functions-core-tools@4'
 
+    - powershell: |
+        npm list --global azure-functions-core-tools --depth=0
+        & "$(FunctionsHostExePath)" --version
+      displayName: Log Azure Functions Core Tools version
+
     - template: stages/steps/storageEmulatorCheck.yml@templates
 
     - template: stages/steps/cosmosDbEmulatorCheck.yml@templates
