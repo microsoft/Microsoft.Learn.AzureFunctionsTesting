@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 {
     public class FunctionFixture<T> : IFunctionFixture, IAsyncLifetime where T : IFunctionTestStartup
     {
+        const int PortReleaseTimeoutSeconds = 10;
+
         static readonly JsonSerializerOptions EventGridJsonSerializerOptions = new()
         {
             Converters = { new CustomDateTimeConverter("yyyy-MM-ddTHH:mm:ssZ") }
@@ -80,11 +83,35 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
             envVars["IS_FUNCTIONS_TEST"] = "true";
 
+            // Deliberate: tests may only run one function app at a time. Killing any stray
+            // host first stops the tests from silently calling an unrelated app left running
+            // on the same port. This means concurrent runs on one machine are not supported,
+            // so anything running these tests must not overlap them, e.g. CI must serialize
+            // the per-framework passes of a multi-targeted project.
             var currentFuncProcesses = Process.GetProcessesByName("func");
             foreach (Process process in currentFuncProcesses)
             {
                 process.Kill(true);
                 process.WaitForExit();
+            }
+
+            // Killing the stale hosts above only covers func. If anything else is still
+            // listening on the port, the readiness check below would happily talk to it and
+            // the tests would silently run against the wrong application, so fail loudly
+            // instead. A just-killed host can take a moment to release the port, so allow
+            // a short grace period before giving up.
+            var portFreeBy = DateTime.UtcNow.AddSeconds(PortReleaseTimeoutSeconds);
+            while (IsPortInUse(builder.Port) && DateTime.UtcNow < portFreeBy)
+            {
+                await Task.Delay(200);
+            }
+
+            if (IsPortInUse(builder.Port))
+            {
+                throw new Exception(
+                    $"Port {builder.Port} is already in use by another process, so the Functions Host Runtime " +
+                    "could not be started there. The tests would otherwise run against whatever is already " +
+                    "listening on that port. Stop that process, or call SetFunctionAppPort() to use a different port.");
             }
 
             hostProcess = new Process
@@ -174,6 +201,21 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 {
                 }
             }
+        }
+
+        static bool IsPortInUse(int port)
+        {
+            // Only sockets in the LISTEN state are returned, so a port left in TIME_WAIT by a
+            // previous run is correctly treated as free.
+            foreach (var listener in IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners())
+            {
+                if (listener.Port == port)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public TPlugin? GetPlugin<TPlugin>(string name) where TPlugin : IFunctionTestPlugin
