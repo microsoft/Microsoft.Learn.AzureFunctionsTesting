@@ -92,8 +92,9 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 StartInfo =
                 {
                     FileName = functionsHostExePath,
-                    // --address requires Azure Functions Core Tools 4.13.0 or later, which changed the
-                    // default bind address from 0.0.0.0 to the IPv4 loopback address.
+                    // --address requires Azure Functions Core Tools 4.14.0 or later, which changes the
+                    // default bind address from 0.0.0.0 to the IPv4 loopback address. Earlier versions
+                    // ignore the flag, so passing it is safe and makes the address configurable once 4.14.0 ships.
                     Arguments = $"start -p {builder.Port} --address {builder.Address} {(builder.EnableAuth ? "--enableAuth" : null)}",
                     WorkingDirectory = functionAppPath
                 }
@@ -125,6 +126,12 @@ namespace Microsoft.Learn.AzureFunctionsTesting
             var waitTil = DateTime.UtcNow.AddSeconds(maxSeconds);
             while (!ready && DateTime.UtcNow < waitTil)
             {
+                // If the host process dies, polling until the timeout expires just hides the real failure
+                if (hostProcess.HasExited)
+                {
+                    throw new Exception($"The Functions Host Runtime process ('{functionsHostExePath}') exited unexpectedly with exit code {hostProcess.ExitCode}.");
+                }
+
                 try
                 {
                     var response = await Client.GetAsync("");
