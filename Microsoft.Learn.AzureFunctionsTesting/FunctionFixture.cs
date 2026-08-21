@@ -83,6 +83,11 @@ namespace Microsoft.Learn.AzureFunctionsTesting
 
             envVars["IS_FUNCTIONS_TEST"] = "true";
 
+            // Deliberate: tests may only run one function app at a time. Killing any stray
+            // host first stops the tests from silently calling an unrelated app left running
+            // on the same port. This means concurrent runs on one machine are not supported,
+            // so anything running these tests must not overlap them, e.g. CI must serialize
+            // the per-framework passes of a multi-targeted project.
             var currentFuncProcesses = Process.GetProcessesByName("func");
             foreach (Process process in currentFuncProcesses)
             {
