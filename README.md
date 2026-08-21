@@ -188,7 +188,7 @@ In order for the Functions host runtime to work in a DevOps pipeline, the Azure 
         verbose: false
         customCommand: 'install -g azure-functions-core-tools'
 
-**Breaking change in 2.0.0:** the host is now started with `--address`, which requires Azure Functions Core Tools **4.13.0 or later**. Core Tools 4.13.0 changed the default bind address from `0.0.0.0` to the IPv4 loopback address, and earlier versions do not recognize the `--address` flag. If you pin Core Tools to an earlier version, stay on 1.2.0. The address defaults to `0.0.0.0` and can be overridden with `SetFunctionAppAddress`.
+**New in 1.3.0:** the host is started with `--address`, which defaults to `0.0.0.0` - the same address Core Tools bound to previously, so no changes are required. Core Tools versions before 4.14.0 ignore the flag. Core Tools 4.14.0 changes the default bind address to the IPv4 loopback address; override it with `SetFunctionAppAddress` if you need the host to be reachable from other machines.
 
 Note that by default, these tools are always installed at `C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe` but if for some reason you need to specify a different path, you can override it with a variable called `FunctionsHostExePath`:
 
