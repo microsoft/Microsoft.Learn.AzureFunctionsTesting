@@ -34,6 +34,14 @@ stages:
 
     - template: stages/steps/cosmosDbEmulator.yml@templates
 
+    - pwsh: |
+        $azuritePath = Join-Path $env:ProgramFiles 'Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\Azure Storage Emulator\azurite.exe'
+        if (-not (Test-Path -LiteralPath $azuritePath -PathType Leaf)) {
+          throw "Azurite was not found at $azuritePath"
+        }
+        Write-Host "##vso[task.prependpath]$(Split-Path -Path $azuritePath -Parent)"
+      displayName: 'Add Visual Studio Azurite to PATH'
+
     - template: stages/steps/storageEmulator.yml@templates
 
     - template: stages/steps/dotnet.yml@templates
