@@ -14,7 +14,7 @@ variables:
   dotNetVersion: '8.0.x'
   solutionPath: ''
   pathToPublish: $(Build.ArtifactStagingDirectory)
-  FunctionsHostExePath: 'C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe'
+  FunctionsHostExeSha256: '9A01570CEB60F6B5DEE96C2686CB10F0F4566268BF97A7CFE243384647B3890A'
 
 stages:
 - stage: Build
@@ -24,6 +24,14 @@ stages:
       vmImage: $(vmImage)
 
     steps:
+    - task: PowerShell@2
+      displayName: 'Install and verify Azure Functions Core Tools'
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)\scripts\Install-VerifiedFunctionsCoreTools.ps1'
+        arguments: '-Version "4.15.2" -ArchiveSha256 "3EED1467D4BDFA2E136EE2FBA4219F533290E42EEF64431D2ADEF28B6B3351B1" -ExecutableSha256 "$(FunctionsHostExeSha256)" -DestinationRoot "$(Agent.TempDirectory)"'
+        pwsh: true
+
     - template: stages/steps/cosmosDbEmulator.yml@templates
 
     - template: stages/steps/storageEmulator.yml@templates
@@ -40,20 +48,6 @@ stages:
       parameters:
         solutionPath: $(solutionPath)
         buildConfiguration: $(buildConfiguration)
-
-    - task: Npm@1
-      displayName: print npm path
-      inputs:
-        command: custom
-        verbose: false
-        customCommand: 'root -g'
-
-    - task: Npm@1
-      displayName: Install Azure Functions Core Tools v4
-      inputs:
-        command: custom
-        verbose: false
-        customCommand: 'install -g azure-functions-core-tools@4'
 
     - template: stages/steps/storageEmulatorCheck.yml@templates
 

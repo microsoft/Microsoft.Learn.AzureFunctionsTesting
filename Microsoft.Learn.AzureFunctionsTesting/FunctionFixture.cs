@@ -61,13 +61,9 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 throw new Exception($"Invalid FunctionApplicationPath - '{fullPath}' does not exist.");
             }
 
-            var functionsHostExePath = Environment.ExpandEnvironmentVariables(settings.FunctionsHostExePath!);
-            if (!File.Exists(functionsHostExePath))
-            {
-                throw new Exception($"Invalid Functions Host Exe Path - '{functionsHostExePath}' does not exist.");
-            }
+            var functionsHostExePath = settings.FunctionsHostExePath!;
 
-            Console.WriteLine($"FunctionsHostExePath: {settings.FunctionsHostExePath}");
+            Console.WriteLine($"FunctionsHostExePath: {functionsHostExePath}");
             Console.WriteLine($"FunctionApplicationPath: {settings.FunctionApplicationPath}");
             Console.WriteLine($"CurrentDirectory: {Directory.GetCurrentDirectory()}");
 
@@ -137,6 +133,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 hostProcess.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
             }
 
+            settings.VerifyHostExecutable();
             var success = hostProcess.Start();
             if (!success)
             {
