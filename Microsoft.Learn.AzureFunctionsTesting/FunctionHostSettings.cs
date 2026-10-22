@@ -15,69 +15,98 @@ namespace Microsoft.Learn.AzureFunctionsTesting
         {
             if (instance == null)
             {
-                // Load the settings from environment variables first - if they are set, we dont need to do the rest of this
-                instance = new FunctionHostSettings
+                var settings = new FunctionHostSettings
                 {
                     FunctionApplicationPath = Environment.GetEnvironmentVariable("FunctionApplicationPath"),
                     FunctionsHostExePath = Environment.GetEnvironmentVariable("FunctionsHostExePath")
                 };
-                if (string.IsNullOrWhiteSpace(instance.FunctionApplicationPath))
+                if (string.IsNullOrWhiteSpace(settings.FunctionApplicationPath))
                 {
-                    instance.FunctionApplicationPath = functionAppPath;
-                }
-                if (!string.IsNullOrEmpty(instance.FunctionsHostExePath))
-                {
-                    return instance;
+                    settings.FunctionApplicationPath = functionAppPath;
                 }
 
-                var pathsToTry = new List<string>();
-                var azureFunctionsMajorVersion = "4";
+                settings.FunctionsHostExePath = ResolveHostExecutablePath(
+                    settings.FunctionsHostExePath,
+                    GetHostExecutableCandidates(
+                        settings.FunctionApplicationPath!,
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        OperatingSystem.IsWindows(),
+                        OperatingSystem.IsMacOS()));
+                instance = settings;
+            }
+            return instance;
+        }
 
+        internal static IEnumerable<string> GetHostExecutableCandidates(
+            string functionAppPath,
+            string localApplicationData,
+            string applicationData,
+            bool isWindows,
+            bool isMacOS)
+        {
+            if (isWindows)
+            {
                 // First, try the runtime installation directory and find the latest version (used by devs on their local machines)
                 // Note that newer versions of the Azure Core Tools have different folders for in-process vs isolated func.exe versions
-                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), instance.FunctionApplicationPath);
-                var isInProcess = !File.Exists(Path.Combine(fullPath!, "extensions.json"));
-                var toolsDir = Environment.ExpandEnvironmentVariables("%LOCALAPPDATA%\\AzureFunctionsTools\\Releases");
-                if (Directory.Exists(toolsDir))
+                if (!string.IsNullOrEmpty(localApplicationData))
                 {
-                    var toolsDirInfo = new DirectoryInfo(toolsDir);
-                    var latestToolsDirInfo = toolsDirInfo.EnumerateDirectories()
-                        .Where(d => d.Name.StartsWith(azureFunctionsMajorVersion))
-                        .Where(d => isInProcess || !d.Name.EndsWith("inprocess"))
-                        .OrderByDescending(d => d.LastWriteTimeUtc)
-                        .FirstOrDefault();
-                    if (latestToolsDirInfo != null)
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), functionAppPath);
+                    var isInProcess = !File.Exists(Path.Combine(fullPath, "extensions.json"));
+                    var toolsDir = Path.Combine(localApplicationData, "AzureFunctionsTools", "Releases");
+                    if (Directory.Exists(toolsDir))
                     {
-                        pathsToTry.Add(Path.Combine(latestToolsDirInfo.FullName, "cli", "func.exe"));
-                        pathsToTry.Add(Path.Combine(latestToolsDirInfo.FullName, "cli_x64", "func.exe"));
+                        var toolsDirInfo = new DirectoryInfo(toolsDir);
+                        var latestToolsDirInfo = toolsDirInfo.EnumerateDirectories()
+                            .Where(d => d.Name.StartsWith("4"))
+                            .Where(d => isInProcess || !d.Name.EndsWith("inprocess"))
+                            .OrderByDescending(d => d.LastWriteTimeUtc)
+                            .FirstOrDefault();
+                        if (latestToolsDirInfo != null)
+                        {
+                            yield return Path.Combine(latestToolsDirInfo.FullName, "cli", "func.exe");
+                            yield return Path.Combine(latestToolsDirInfo.FullName, "cli_x64", "func.exe");
+                        }
                     }
                 }
 
                 // global npm folder for local devs
-                pathsToTry.Add(Environment.ExpandEnvironmentVariables("%APPDATA%\\npm\\node_modules\\azure-functions-core-tools\\bin\\func.exe"));
-
-                // node_modules folder in this repository for CI builds
-                var workingDirectory = Environment.GetEnvironmentVariable("SYSTEM_DEFAULTWORKINGDIRECTORY");
-                if (!string.IsNullOrEmpty(workingDirectory)) pathsToTry.Add($"{workingDirectory}\\node_modules\\azure-functions-core-tools_{azureFunctionsMajorVersion}\\bin\\func.exe");
-
-                // global npm folder for CI builds
-                pathsToTry.Add("C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe");
-
-                // homebrew folder for mac
-                pathsToTry.Add("/opt/homebrew/bin/func");
-
-
-                // loop over all of the paths to try and take the first one that actually exists
-                foreach (var pathToTry in pathsToTry)
+                if (!string.IsNullOrEmpty(applicationData))
                 {
-                    if (File.Exists(pathToTry))
-                    {
-                        instance.FunctionsHostExePath = pathToTry;
-                        break;
-                    }
+                    yield return Path.Combine(applicationData, "npm", "node_modules", "azure-functions-core-tools", "bin", "func.exe");
                 }
             }
-            return instance;
+            else if (isMacOS)
+            {
+                yield return "/opt/homebrew/bin/func";
+            }
+        }
+
+        internal static string ResolveHostExecutablePath(string? configuredPath, IEnumerable<string> candidates)
+        {
+            if (!string.IsNullOrEmpty(configuredPath))
+            {
+                var expandedPath = Environment.ExpandEnvironmentVariables(configuredPath);
+                if (!Path.IsPathFullyQualified(expandedPath))
+                {
+                    throw new InvalidOperationException("FunctionsHostExePath must be a fully qualified absolute path to the Azure Functions Core Tools executable.");
+                }
+                if (!File.Exists(expandedPath))
+                {
+                    throw new InvalidOperationException($"Invalid FunctionsHostExePath - '{expandedPath}' does not exist. Set FunctionsHostExePath to the absolute path of an installed Azure Functions Core Tools executable.");
+                }
+                return expandedPath;
+            }
+
+            foreach (var candidate in candidates)
+            {
+                if (Path.IsPathFullyQualified(candidate) && File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            throw new InvalidOperationException("Azure Functions Core Tools could not be found. Install Core Tools using Visual Studio or per-user npm on Windows, or Homebrew on macOS, or set FunctionsHostExePath to the absolute path of the executable. CI and other installation locations require FunctionsHostExePath.");
         }
 
         public string? FunctionsHostExePath { get; set; }

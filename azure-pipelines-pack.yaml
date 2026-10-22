@@ -14,7 +14,6 @@ variables:
   dotNetVersion: '8.0.x'
   solutionPath: ''
   pathToPublish: $(Build.ArtifactStagingDirectory)
-  FunctionsHostExePath: 'C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe'
 
 stages:
 - stage: Build
@@ -42,18 +41,23 @@ stages:
         buildConfiguration: $(buildConfiguration)
 
     - task: Npm@1
-      displayName: print npm path
-      inputs:
-        command: custom
-        verbose: false
-        customCommand: 'root -g'
-
-    - task: Npm@1
       displayName: Install Azure Functions Core Tools v4
       inputs:
         command: custom
         verbose: false
         customCommand: 'install -g azure-functions-core-tools@4'
+
+    - pwsh: |
+        $npmRoot = npm root -g
+        if ($LASTEXITCODE -ne 0) {
+          throw 'Could not determine the global npm modules directory.'
+        }
+        $hostPath = Join-Path $npmRoot 'azure-functions-core-tools\bin\func.exe'
+        if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
+          throw "Azure Functions Core Tools executable not found at '$hostPath'."
+        }
+        Write-Host "##vso[task.setvariable variable=FunctionsHostExePath]$hostPath"
+      displayName: Configure FunctionsHostExePath from npm installation
 
     - template: stages/steps/storageEmulatorCheck.yml@templates
 
