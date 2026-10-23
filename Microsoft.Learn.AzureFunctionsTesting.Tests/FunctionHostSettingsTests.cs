@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using Xunit;
 
 namespace Microsoft.Learn.AzureFunctionsTesting.Tests
@@ -71,7 +70,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
             try
             {
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", ComputeHash(hostPath));
+                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", null);
                 Environment.SetEnvironmentVariable("FunctionApplicationPath", null);
 
                 var settings = FunctionHostSettings.Load("app");
@@ -92,7 +91,6 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
         public void Load_expands_host_path_and_preserves_function_app_override()
         {
             var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
             var originalAppPath = Environment.GetEnvironmentVariable("FunctionApplicationPath");
             var originalDirectory = Environment.GetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY");
             var hostPath = Path.GetTempFileName();
@@ -101,7 +99,6 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
                 Environment.SetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY", Path.GetDirectoryName(hostPath));
                 Environment.SetEnvironmentVariable("FunctionsHostExePath",
                     $"%FUNCTIONS_HOST_TEST_DIRECTORY%{Path.DirectorySeparatorChar}{Path.GetFileName(hostPath)}");
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", ComputeHash(hostPath));
                 Environment.SetEnvironmentVariable("FunctionApplicationPath", "overridden-app");
 
                 var settings = FunctionHostSettings.Load("default-app");
@@ -112,7 +109,6 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
             finally
             {
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
                 Environment.SetEnvironmentVariable("FunctionApplicationPath", originalAppPath);
                 Environment.SetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY", originalDirectory);
                 File.Delete(hostPath);
@@ -123,12 +119,10 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
         public void Load_does_not_reuse_an_earlier_host_path()
         {
             var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
             var hostPath = Path.GetTempFileName();
             try
             {
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", ComputeHash(hostPath));
                 Assert.Equal(hostPath, FunctionHostSettings.Load("app").FunctionsHostExePath);
 
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", null);
@@ -137,39 +131,12 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
             finally
             {
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
-                File.Delete(hostPath);
-            }
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("not-a-digest")]
-        [InlineData("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")]
-        public void Load_requires_a_valid_approved_digest(string? digest)
-        {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", digest);
-
-                var exception = Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
-
-                Assert.Contains("FunctionsHostExeSha256", exception.Message);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
                 File.Delete(hostPath);
             }
         }
 
         [Fact]
-        public void Load_rejects_a_host_that_does_not_match_the_approved_digest()
+        public void Load_does_not_use_a_legacy_hash_setting()
         {
             var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
             var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
@@ -179,7 +146,7 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
                 Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
                 Environment.SetEnvironmentVariable("FunctionsHostExeSha256", new string('0', 64));
 
-                Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
+                Assert.Equal(hostPath, FunctionHostSettings.Load("app").FunctionsHostExePath);
             }
             finally
             {
@@ -188,33 +155,5 @@ namespace Microsoft.Learn.AzureFunctionsTesting.Tests
                 File.Delete(hostPath);
             }
         }
-
-        [Fact]
-        public void VerifyHostExecutable_rejects_a_host_changed_after_loading()
-        {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", ComputeHash(hostPath));
-                var settings = FunctionHostSettings.Load("app");
-
-                File.WriteAllText(hostPath, "replaced");
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", ComputeHash(hostPath));
-
-                Assert.Throws<InvalidOperationException>(() => settings.VerifyHostExecutable());
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
-                File.Delete(hostPath);
-            }
-        }
-
-        private static string ComputeHash(string path) =>
-            Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
     }
 }

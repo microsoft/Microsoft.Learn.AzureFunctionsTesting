@@ -133,7 +133,6 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 hostProcess.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
             }
 
-            settings.VerifyHostExecutable();
             var success = hostProcess.Start();
             if (!success)
             {

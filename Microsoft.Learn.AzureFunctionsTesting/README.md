@@ -182,13 +182,19 @@ In order for the Functions host runtime to work in a DevOps pipeline, install an
 
 **New in 1.3.0:** the host is started with `--address`, which defaults to `0.0.0.0` - the same address Core Tools bound to previously, so no changes are required. Core Tools versions before 4.14.0 ignore the flag. Core Tools 4.14.0 changes its own default bind address to the IPv4 loopback address, but because the fixture always passes `--address`, the host remains reachable from other machines. Use `SetFunctionAppAddress` if you want to restrict that - for example, `SetFunctionAppAddress("127.0.0.1")` to bind to loopback only.
 
-Set `FunctionsHostExePath` to the absolute path of the Core Tools executable and `FunctionsHostExeSha256` to its approved, 64-character SHA-256 digest before running integration tests, both locally and in CI. For example, after installing a verified release:
+**Breaking change in 2.0.0:** set `FunctionsHostExePath` to the absolute path of a trusted Core Tools v4 executable before running integration tests. The package no longer searches installed locations or requires `FunctionsHostExeSha256`. A missing, relative, or nonexistent path fails without falling back to another installation:
 
 	variables:
-	  FunctionsHostExePath: '<absolute-path-to-verified-func.exe>'
-	  FunctionsHostExeSha256: '<approved-64-character-digest>'
+	  FunctionsHostExePath: '<absolute-path-to-trusted-func>'
 
-Use the actual installation path on your machine or build agent. Obtain the expected digest from a trusted, independently reviewed release or installation process; do **not** generate it from the file you are about to run in the same test job. The package checks the executable against the expected digest when loading settings and again just before launch, but a digest supplied by an untrusted party proves nothing. Protect the executable and its parent directories from replacement between verification and launch.
+For local development, you can set the path yourself or run the optional [PowerShell helper](https://github.com/microsoft/Microsoft.Learn.AzureFunctionsTesting/blob/main/scripts/Set-LocalFunctionsHostPath.ps1) from a source checkout (it is also included in the NuGet package's `tools` folder). It finds a Visual Studio, global npm, or Homebrew installation **only when you request that source**, displays the selected path, and does not download or verify Core Tools:
+
+	.\scripts\Set-LocalFunctionsHostPath.ps1 -Source VisualStudio
+	# Or: -Source Npm (Windows/macOS/Linux), or -Source Homebrew (macOS)
+
+Run your tests from the same PowerShell session. To use the Visual Studio test runner, run `.\scripts\Set-LocalFunctionsHostPath.ps1 -Source VisualStudio -Scope User` on Windows and restart Visual Studio so it reads the new user environment variable. If Visual Studio changes its Core Tools installation, rerun the helper and restart Visual Studio. When Visual Studio has several v4 installations, choose the one appropriate for your app from the displayed list. For npm or Homebrew, trust the package manager, installation location, and their permissions before opting in; the helper will reject the shared `C:\npm\prefix` location.
+
+The package validates the explicit path, **not** the executable's signature, hash, or ownership. An absolute path does not stop an attacker who can replace that file or its dependencies. Install Core Tools from a trusted source and protect the installation and test environment. CI should provision and verify its own version as in the package pipeline; do not use the local helper in CI or expose secrets to untrusted build steps.
 
 Note that in order to use the CosmosDb emulator in a DevOps pipeline, you also have to add the required task to enable the emulator before the tests task:
 
