@@ -1,158 +1,225 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
 namespace Microsoft.Learn.AzureFunctionsTesting.Tests
 {
-    public class FunctionHostSettingsTests
+    public class FunctionHostSettingsTests : IDisposable
     {
+        private readonly string testDirectory = Path.Combine(Path.GetTempPath(), "FunctionHostSettingsTests-" + Guid.NewGuid().ToString("N"));
+        private readonly Dictionary<string, string?> originalEnvironment = new();
+
+        public FunctionHostSettingsTests()
+        {
+            foreach (var name in new[] { "FunctionsHostExePath", "FunctionApplicationPath", "LOCALAPPDATA", "APPDATA", "SYSTEM_DEFAULTWORKINGDIRECTORY" })
+            {
+                originalEnvironment[name] = Environment.GetEnvironmentVariable(name);
+                Environment.SetEnvironmentVariable(name, null);
+            }
+
+            Directory.CreateDirectory(testDirectory);
+            Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(testDirectory, "local"));
+            Environment.SetEnvironmentVariable("APPDATA", Path.Combine(testDirectory, "roaming"));
+            Environment.SetEnvironmentVariable("SYSTEM_DEFAULTWORKINGDIRECTORY", Path.Combine(testDirectory, "workspace"));
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("  ")]
-        public void Load_requires_an_explicit_host_path(string? configuredPath)
+        public void Load_explains_setup_when_no_host_is_found(string? configuredPath)
         {
-            var originalPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", configuredPath);
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", configuredPath);
 
-                var exception = Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
+            var exception = Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
 
-                Assert.Contains("FunctionsHostExePath", exception.Message);
-            }
-            finally
+            Assert.Contains("FunctionsHostExePath", exception.Message);
+        }
+
+        [WindowsTheory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("  ")]
+        public void Load_discovers_per_user_npm_when_no_path_is_configured(string? configuredPath)
+        {
+            var hostPath = CreateNpmHost();
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", configuredPath);
+
+            var settings = FunctionHostSettings.Load("app");
+
+            Assert.Equal(hostPath, settings.FunctionsHostExePath);
+        }
+
+        [WindowsTheory]
+        [InlineData("cli")]
+        [InlineData("cli_x64")]
+        public void Load_prefers_visual_studio_over_per_user_npm(string cliDirectory)
+        {
+            var hostPath = CreateVisualStudioHost("4.15.0", cliDirectory);
+            CreateNpmHost();
+
+            var settings = FunctionHostSettings.Load("app");
+
+            Assert.Equal(hostPath, settings.FunctionsHostExePath);
+        }
+
+        [WindowsTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Load_selects_the_latest_compatible_visual_studio_release(bool isolated)
+        {
+            var isolatedHost = CreateVisualStudioHost("4.15.0");
+            var inProcessHost = CreateVisualStudioHost("4.15.0-inprocess");
+            var otherMajorVersionHost = CreateVisualStudioHost("40.0.0");
+            Directory.SetLastWriteTimeUtc(Path.GetDirectoryName(Path.GetDirectoryName(isolatedHost))!, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            Directory.SetLastWriteTimeUtc(Path.GetDirectoryName(Path.GetDirectoryName(inProcessHost))!, new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+            Directory.SetLastWriteTimeUtc(Path.GetDirectoryName(Path.GetDirectoryName(otherMajorVersionHost))!, new DateTime(2026, 1, 3, 0, 0, 0, DateTimeKind.Utc));
+            var appPath = Path.Combine(testDirectory, "app");
+            Directory.CreateDirectory(appPath);
+            if (isolated)
             {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalPath);
+                File.WriteAllText(Path.Combine(appPath, "extensions.json"), "{}");
             }
+            Environment.SetEnvironmentVariable("FunctionApplicationPath", appPath);
+
+            var settings = FunctionHostSettings.Load("unused-app");
+
+            Assert.Equal(isolated ? isolatedHost : inProcessHost, settings.FunctionsHostExePath);
+            Assert.Equal(appPath, settings.FunctionApplicationPath);
+        }
+
+        [WindowsFact]
+        public void Load_falls_back_to_per_user_npm_when_visual_studio_has_no_executable()
+        {
+            Directory.CreateDirectory(Path.Combine(testDirectory, "local", "AzureFunctionsTools", "Releases", "4.15.0"));
+            var hostPath = CreateNpmHost();
+
+            Assert.Equal(hostPath, FunctionHostSettings.Load("app").FunctionsHostExePath);
         }
 
         [Fact]
-        public void Load_rejects_relative_host_path()
+        public void Load_does_not_discover_a_workspace_installation()
         {
-            var originalPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", "node_modules/azure-functions-core-tools/bin/func.exe");
+            CreateHost("workspace", "node_modules", "azure-functions-core-tools_4", "bin", "func.exe");
 
-                Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalPath);
-            }
+            Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
         }
 
         [Fact]
-        public void Load_rejects_missing_host_file()
+        public void Load_does_not_use_relative_per_user_directories()
         {
-            var originalPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath",
-                    Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "func.exe"));
+            Environment.SetEnvironmentVariable("LOCALAPPDATA", "local");
+            Environment.SetEnvironmentVariable("APPDATA", "roaming");
 
-                Assert.Throws<FileNotFoundException>(() => FunctionHostSettings.Load("app"));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalPath);
-            }
+            Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
         }
 
         [Fact]
-        public void Load_uses_configured_existing_host_path()
+        public void Load_rejects_a_relative_explicit_path_without_discovery()
         {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
-            var originalAppPath = Environment.GetEnvironmentVariable("FunctionApplicationPath");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", null);
-                Environment.SetEnvironmentVariable("FunctionApplicationPath", null);
+            CreateNpmHost();
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", "node_modules/azure-functions-core-tools/bin/func.exe");
 
-                var settings = FunctionHostSettings.Load("app");
-
-                Assert.Equal(hostPath, settings.FunctionsHostExePath);
-                Assert.Equal("app", settings.FunctionApplicationPath);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
-                Environment.SetEnvironmentVariable("FunctionApplicationPath", originalAppPath);
-                File.Delete(hostPath);
-            }
+            Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
         }
 
         [Fact]
-        public void Load_expands_host_path_and_preserves_function_app_override()
+        public void Load_rejects_a_missing_explicit_file_without_discovery()
         {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalAppPath = Environment.GetEnvironmentVariable("FunctionApplicationPath");
-            var originalDirectory = Environment.GetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY", Path.GetDirectoryName(hostPath));
-                Environment.SetEnvironmentVariable("FunctionsHostExePath",
-                    $"%FUNCTIONS_HOST_TEST_DIRECTORY%{Path.DirectorySeparatorChar}{Path.GetFileName(hostPath)}");
-                Environment.SetEnvironmentVariable("FunctionApplicationPath", "overridden-app");
+            CreateNpmHost();
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", Path.Combine(testDirectory, "missing", "func.exe"));
 
-                var settings = FunctionHostSettings.Load("default-app");
-
-                Assert.Equal(hostPath, settings.FunctionsHostExePath);
-                Assert.Equal("overridden-app", settings.FunctionApplicationPath);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionApplicationPath", originalAppPath);
-                Environment.SetEnvironmentVariable("FUNCTIONS_HOST_TEST_DIRECTORY", originalDirectory);
-                File.Delete(hostPath);
-            }
+            Assert.Throws<FileNotFoundException>(() => FunctionHostSettings.Load("app"));
         }
 
         [Fact]
-        public void Load_does_not_reuse_an_earlier_host_path()
+        public void Load_uses_the_explicit_path_instead_of_discovery()
         {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Assert.Equal(hostPath, FunctionHostSettings.Load("app").FunctionsHostExePath);
+            var hostPath = CreateHost("explicit installation", "func.exe");
+            CreateVisualStudioHost("4.15.0");
+            CreateNpmHost();
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
 
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", null);
-                Assert.Throws<InvalidOperationException>(() => FunctionHostSettings.Load("app"));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                File.Delete(hostPath);
-            }
+            var settings = FunctionHostSettings.Load("app");
+
+            Assert.Equal(hostPath, settings.FunctionsHostExePath);
+            Assert.Equal("app", settings.FunctionApplicationPath);
         }
 
         [Fact]
-        public void Load_does_not_use_a_legacy_hash_setting()
+        public void Load_expands_the_explicit_path_and_preserves_the_function_app_override()
         {
-            var originalHostPath = Environment.GetEnvironmentVariable("FunctionsHostExePath");
-            var originalHash = Environment.GetEnvironmentVariable("FunctionsHostExeSha256");
-            var hostPath = Path.GetTempFileName();
-            try
-            {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", hostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", new string('0', 64));
+            var hostPath = CreateHost("local", "custom installation", "func.exe");
+            Environment.SetEnvironmentVariable("FunctionsHostExePath",
+                Path.Combine("%LOCALAPPDATA%", "custom installation", "func.exe"));
+            Environment.SetEnvironmentVariable("FunctionApplicationPath", "overridden-app");
 
-                Assert.Equal(hostPath, FunctionHostSettings.Load("app").FunctionsHostExePath);
-            }
-            finally
+            var settings = FunctionHostSettings.Load("default-app");
+
+            Assert.Equal(hostPath, settings.FunctionsHostExePath);
+            Assert.Equal("overridden-app", settings.FunctionApplicationPath);
+        }
+
+        [WindowsFact]
+        public void Load_does_not_reuse_an_earlier_explicit_path()
+        {
+            var configuredHost = CreateHost("explicit", "func.exe");
+            var discoveredHost = CreateNpmHost();
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", configuredHost);
+            Assert.Equal(configuredHost, FunctionHostSettings.Load("app").FunctionsHostExePath);
+
+            Environment.SetEnvironmentVariable("FunctionsHostExePath", null);
+
+            Assert.Equal(discoveredHost, FunctionHostSettings.Load("app").FunctionsHostExePath);
+        }
+
+        private string CreateVisualStudioHost(string release, string cliDirectory = "cli")
+        {
+            return CreateHost("local", "AzureFunctionsTools", "Releases", release, cliDirectory, "func.exe");
+        }
+
+        private string CreateNpmHost()
+        {
+            return CreateHost("roaming", "npm", "node_modules", "azure-functions-core-tools", "bin", "func.exe");
+        }
+
+        private string CreateHost(params string[] relativePath)
+        {
+            var path = Path.Combine(testDirectory, Path.Combine(relativePath));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, string.Empty);
+            return path;
+        }
+
+        public void Dispose()
+        {
+            foreach (var variable in originalEnvironment)
             {
-                Environment.SetEnvironmentVariable("FunctionsHostExePath", originalHostPath);
-                Environment.SetEnvironmentVariable("FunctionsHostExeSha256", originalHash);
-                File.Delete(hostPath);
+                Environment.SetEnvironmentVariable(variable.Key, variable.Value);
+            }
+            Directory.Delete(testDirectory, recursive: true);
+        }
+
+        private sealed class WindowsFactAttribute : FactAttribute
+        {
+            public WindowsFactAttribute()
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    Skip = "Per-user Core Tools discovery is supported only on Windows.";
+                }
+            }
+        }
+
+        private sealed class WindowsTheoryAttribute : TheoryAttribute
+        {
+            public WindowsTheoryAttribute()
+            {
+                if (!OperatingSystem.IsWindows())
+                {
+                    Skip = "Per-user Core Tools discovery is supported only on Windows.";
+                }
             }
         }
     }

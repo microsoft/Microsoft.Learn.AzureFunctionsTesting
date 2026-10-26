@@ -178,23 +178,20 @@ The function app path can be set with the following environment variable:
 	  buildConfiguration: 'Release'
 	  FunctionApplicationPath: '..\\..\\..\\..\\..\\Your.App\\bin\\Release\\net8.0'	# Note that this is using the Release build
 
-In order for the Functions host runtime to work in a DevOps pipeline, install an approved, exact version of Azure Functions Core Tools before running tests. The [package pipeline](../azure-pipelines-pack.yaml) downloads the pinned Windows release, checks the archive against a reviewed digest before extracting it, verifies the executable, and sets `FunctionsHostExePath` for the test task.
+In order for the Functions host runtime to work in a DevOps pipeline, install an approved, exact version of Azure Functions Core Tools before running tests and set `FunctionsHostExePath` to its absolute executable path. The [package pipeline](../azure-pipelines-pack.yaml) builds and packages this library and provides an example of verified Core Tools setup. These steps do not run automatically in pipelines that use the NuGet package; configure equivalent trusted provisioning in your own pipeline.
 
 **New in 1.3.0:** the host is started with `--address`, which defaults to `0.0.0.0` - the same address Core Tools bound to previously, so no changes are required. Core Tools versions before 4.14.0 ignore the flag. Core Tools 4.14.0 changes its own default bind address to the IPv4 loopback address, but because the fixture always passes `--address`, the host remains reachable from other machines. Use `SetFunctionAppAddress` if you want to restrict that - for example, `SetFunctionAppAddress("127.0.0.1")` to bind to loopback only.
 
-**Breaking change in 2.0.0:** set `FunctionsHostExePath` to the absolute path of a trusted Core Tools v4 executable before running integration tests. The package no longer searches installed locations or requires `FunctionsHostExeSha256`. A missing, relative, or nonexistent path fails without falling back to another installation:
+**Breaking change in 2.0.0:** automatic discovery no longer searches `C:\npm\prefix`, the pipeline workspace's `node_modules`, or `/opt/homebrew/bin/func`. If you relied on one of these locations, configure a trusted installation explicitly:
 
 	variables:
 	  FunctionsHostExePath: '<absolute-path-to-trusted-func>'
 
-For local development, you can set the path yourself or run the optional [PowerShell helper](https://github.com/microsoft/Microsoft.Learn.AzureFunctionsTesting/blob/main/scripts/Set-LocalFunctionsHostPath.ps1) from a source checkout (it is also included in the NuGet package's `tools` folder). It finds a Visual Studio, global npm, or Homebrew installation **only when you request that source**, displays the selected path, and does not download or verify Core Tools:
+On Windows, when `FunctionsHostExePath` is unset, the package still searches your per-user Visual Studio Core Tools v4 installation, followed by `%APPDATA%\npm\node_modules\azure-functions-core-tools\bin\func.exe`. Visual Studio discovery retains the latest-release selection and excludes in-process-only releases for isolated function apps. No PowerShell helper is needed for these installations.
 
-	.\scripts\Set-LocalFunctionsHostPath.ps1 -Source VisualStudio
-	# Or: -Source Npm (Windows/macOS/Linux), or -Source Homebrew (macOS)
+On macOS and Linux, set `FunctionsHostExePath` explicitly, including for npm and Homebrew installations. If automatic discovery finds nothing, the package stops with setup instructions. An explicitly configured relative or nonexistent path fails without falling back to another installation.
 
-Run your tests from the same PowerShell session. To use the Visual Studio test runner, run `.\scripts\Set-LocalFunctionsHostPath.ps1 -Source VisualStudio -Scope User` on Windows and restart Visual Studio so it reads the new user environment variable. If Visual Studio changes its Core Tools installation, rerun the helper and restart Visual Studio. When Visual Studio has several v4 installations, choose the one appropriate for your app from the displayed list. For npm or Homebrew, trust the package manager, installation location, and their permissions before opting in; the helper will reject the shared `C:\npm\prefix` location.
-
-The package validates the explicit path, **not** the executable's signature, hash, or ownership. An absolute path does not stop an attacker who can replace that file or its dependencies. Install Core Tools from a trusted source and protect the installation and test environment. CI should provision and verify its own version as in the package pipeline; do not use the local helper in CI or expose secrets to untrusted build steps.
+Automatic discovery assumes that the per-user installation and its parent directories are protected from other accounts. Do not rely on discovery when running elevated or under a different account; provision an appropriate trusted installation and configure its path explicitly. The package does not verify executable signatures, hashes, ownership, or link targets. An absolute path does not stop an attacker who can replace that file or its dependencies. Protect the installation and test environment, and do not expose secrets to untrusted build steps.
 
 Note that in order to use the CosmosDb emulator in a DevOps pipeline, you also have to add the required task to enable the emulator before the tests task:
 
