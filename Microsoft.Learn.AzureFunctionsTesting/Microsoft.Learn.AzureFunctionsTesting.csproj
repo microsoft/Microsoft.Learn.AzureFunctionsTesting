@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Microsoft.Learn.AzureFunctionsTesting.Core\Microsoft.Learn.AzureFunctionsTesting.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Learn.AzureFunctionsTesting.Tests" />
+  </ItemGroup>
+
 </Project>

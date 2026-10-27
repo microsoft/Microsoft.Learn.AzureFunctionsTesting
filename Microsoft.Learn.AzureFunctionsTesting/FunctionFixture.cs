@@ -61,8 +61,8 @@ namespace Microsoft.Learn.AzureFunctionsTesting
                 throw new Exception($"Invalid FunctionApplicationPath - '{fullPath}' does not exist.");
             }
 
-            var functionsHostExePath = Environment.ExpandEnvironmentVariables(settings.FunctionsHostExePath!);
-            if (!File.Exists(functionsHostExePath))
+            var functionsHostExePath = settings.FunctionsHostExePath;
+            if (string.IsNullOrEmpty(functionsHostExePath) || !Path.IsPathFullyQualified(functionsHostExePath) || !File.Exists(functionsHostExePath))
             {
                 throw new Exception($"Invalid Functions Host Exe Path - '{functionsHostExePath}' does not exist.");
             }

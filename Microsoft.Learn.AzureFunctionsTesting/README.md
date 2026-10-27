@@ -171,28 +171,33 @@ The solution is the `Microsoft.Learn.AzureFunctionsTesting.Extension.DebugProces
 
 ## Configuring for CI/CD
 
-All of the functionality works the same way when ran in an Azure DevOps pipeline. The only difference is the configuration of the function app path.
-That value can be set with the following environment variables:
+For local development, the library automatically discovers Visual Studio and per-user npm Core Tools installations on Windows, or `/opt/homebrew/bin/func` on macOS. Other platforms and installation locations require `FunctionsHostExePath`. Automatic discovery does not search shared npm prefixes or CI workspaces.
+
+In an Azure DevOps pipeline, configure the function app path and explicitly select the installed Core Tools executable:
 
 	variables:
 	  buildConfiguration: 'Release'
 	  FunctionApplicationPath: '..\\..\\..\\..\\..\\Your.App\\bin\\Release\\net8.0'	# Note that this is using the Release build
 
-In order for the Functions host runtime to work in a DevOps pipeline, the Azure Functions Core tools must be installed. Ensure that the following task is added before the task that runs the test:
+In order for the Functions host runtime to work in a DevOps pipeline, the Azure Functions Core Tools must be installed. Ensure that the following task is added before the task that runs the test:
 
     - task: Npm@1
       displayName: Install Azure Functions Core Tools
       inputs:
         command: custom
         verbose: false
-        customCommand: 'install -g azure-functions-core-tools'
+        customCommand: 'install -g azure-functions-core-tools@4'
 
 **New in 1.3.0:** the host is started with `--address`, which defaults to `0.0.0.0` - the same address Core Tools bound to previously, so no changes are required. Core Tools versions before 4.14.0 ignore the flag. Core Tools 4.14.0 changes its own default bind address to the IPv4 loopback address, but because the fixture always passes `--address`, the host remains reachable from other machines. Use `SetFunctionAppAddress` if you want to restrict that - for example, `SetFunctionAppAddress("127.0.0.1")` to bind to loopback only.
 
-Note that by default, these tools are always installed at `C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe` but if for some reason you need to specify a different path, you can override it with a variable called `FunctionsHostExePath`:
+Set `FunctionsHostExePath` to the actual absolute executable path for your installation. Use `npm root -g` to locate the global npm modules directory; the executable is under `azure-functions-core-tools\bin\func.exe` on Windows. For example, if the modules directory is `C:\npm\prefix\node_modules`:
 
 	variables:
-	  FunctionsHostExePath: 'C:\\npm\\prefix\\node_modules\\azure-functions-core-tools\\bin\\func.exe'
+	  FunctionsHostExePath: 'C:\npm\prefix\node_modules\azure-functions-core-tools\bin\func.exe'
+
+The override supports environment-variable expansion, but the expanded path must be fully qualified and point to an existing file. Invalid overrides fail without falling back to automatic discovery. This also applies to local overrides; relative paths are not supported.
+
+Core Tools is a trusted executable dependency, like the test runner and restored packages. Discovery and path validation do not verify signatures, hashes, ownership, or permissions. Install tools from trusted sources and protect the installation and test environment from untrusted modification.
 
 Note that in order to use the CosmosDb emulator in a DevOps pipeline, you also have to add the required task to enable the emulator before the tests task:
 
