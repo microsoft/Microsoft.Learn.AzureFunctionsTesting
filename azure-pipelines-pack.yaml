@@ -1,159 +1,125 @@
-resources:
-  repositories:
-    - repository: templates
-      type: git
-      name: Engineering/DevOpsBuildTemplates
-      ref: 'refs/heads/live'
-
 trigger:
 - main
 
+resources:
+  repositories:
+  - repository: 1esPipelines
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+  - repository: buildTemplates
+    type: git
+    name: Engineering/DevOpsBuildTemplates
+    ref: refs/heads/live
+
 variables:
-  vmImage: 'windows-2022'
   buildConfiguration: 'Release'
   dotNetVersion: '8.0.x'
   solutionPath: ''
   pathToPublish: $(Build.ArtifactStagingDirectory)
 
-stages:
-- stage: Build
-  jobs:
-  - job: 'BuildAndTest'
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
+  parameters:
+    serviceTreeId: $(serviceTreeId)
+
     pool:
-      vmImage: $(vmImage)
+      name: $(oneEsPoolName)
+      os: windows
 
-    steps:
-    - template: stages/steps/cosmosDbEmulator.yml@templates
+    stages:
+    - stage: Build
+      jobs:
+      - job: BuildAndTest
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: $(pathToPublish)
+            artifactName: nugets
 
-    - pwsh: |
-        $azuritePath = Join-Path $env:ProgramFiles 'Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\Azure Storage Emulator\azurite.exe'
-        if (-not (Test-Path -LiteralPath $azuritePath -PathType Leaf)) {
-          throw "Azurite was not found at $azuritePath"
-        }
-        Write-Host "##vso[task.prependpath]$(Split-Path -Path $azuritePath -Parent)"
-      displayName: 'Add Visual Studio Azurite to PATH'
+        steps:
+        - template: stages/steps/cosmosDbEmulator.yml@buildTemplates
 
-    - template: stages/steps/storageEmulator.yml@templates
+        - template: stages/steps/storageEmulator.yml@buildTemplates
 
-    - template: stages/steps/dotnet.yml@templates
-      parameters:
-        version: '6.0.x'
+        - template: stages/steps/dotnet.yml@buildTemplates
+          parameters:
+            version: '6.0.x'
 
-    - template: stages/steps/dotnet.yml@templates
-      parameters:
-        version: '8.0.x'
+        - template: stages/steps/dotnet.yml@buildTemplates
+          parameters:
+            version: '8.0.x'
 
-    - template: stages/steps/buildProjects.yml@templates
-      parameters:
-        solutionPath: $(solutionPath)
-        buildConfiguration: $(buildConfiguration)
+        - template: stages/steps/buildProjects.yml@buildTemplates
+          parameters:
+            solutionPath: $(solutionPath)
+            buildConfiguration: $(buildConfiguration)
 
-    - task: Npm@1
-      displayName: Install Azure Functions Core Tools v4
-      inputs:
-        command: custom
-        verbose: false
-        customCommand: 'install -g azure-functions-core-tools@4'
+        - task: Npm@1
+          displayName: Install Azure Functions Core Tools v4
+          inputs:
+            command: custom
+            verbose: false
+            customCommand: 'install -g azure-functions-core-tools@4'
 
-    - pwsh: |
-        $npmRoot = npm root -g
-        if ($LASTEXITCODE -ne 0) {
-          throw 'Could not determine the global npm modules directory.'
-        }
-        $hostPath = Join-Path $npmRoot 'azure-functions-core-tools\bin\func.exe'
-        if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
-          throw "Azure Functions Core Tools executable not found at '$hostPath'."
-        }
-        Write-Host "##vso[task.setvariable variable=FunctionsHostExePath]$hostPath"
-      displayName: Configure FunctionsHostExePath from npm installation
-
-    - template: stages/steps/storageEmulatorCheck.yml@templates
-
-    - template: stages/steps/cosmosDbEmulatorCheck.yml@templates
-
-    - template: stages/steps/test.yml@templates
-      parameters:
-        solutionPath: $(solutionPath)
-        buildConfiguration: $(buildConfiguration)
-
-    # Authenticode sign all the DLLs with the Microsoft certificate
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@5
-      displayName: 'ESRP CodeSigning: Authenticode'
-      inputs:
-        ConnectedServiceName: 'Learn ESRP Code Signing'
-        AppRegistrationClientId: '1a99b436-655d-4945-bf0f-9058f4e193fb' 
-        AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346' 
-        AuthAKVName: 'learn-codesign-vault' 
-        AuthCertName: 'AuthCert' 
-        AuthSignCertName: 'RequestSigningCert'
-        FolderPath: $(solutionPath)
-        Pattern: 'Microsoft.Learn.*.dll'
-        signConfigType: inlineSignParams
-        inlineOperation: |
-          [
-            {
-                "KeyCode": "CP-230012",
-                "OperationCode": "SigntoolSign",
-                "Parameters": {
-                    "OpusName": "Microsoft",
-                    "OpusInfo": "http://www.microsoft.com",
-                    "FileDigest": "/fd \"SHA256\"",
-                    "PageHash": "/NPH",
-                    "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-                },
-                "ToolName": "sign",
-                "ToolVersion": "1.0"
-              },
-              {
-                  "KeyCode": "CP-230012",
-                  "OperationCode": "SigntoolVerify",
-                  "Parameters": {},
-                  "ToolName": "sign",
-                  "ToolVersion": "1.0"
-              }
-          ]
-
-    - task: DotNetCoreCLI@2
-      displayName: Build NuGet packages
-      inputs:
-        command: 'pack'
-        packagesToPack: '$(solutionPath)**/Microsoft.Learn.AzureFunctionsTesting*.csproj'
-        configuration: '$(buildConfiguration)'
-        packDirectory: '$(pathToPublish)'
-        nobuild: true
-
-    # Digitally sign all the nuget packages with the Microsoft certificate.
-    - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@5
-      displayName: 'ESRP CodeSigning: Nupkg'
-      inputs:
-        ConnectedServiceName: 'Learn ESRP Code Signing'
-        AppRegistrationClientId: '1a99b436-655d-4945-bf0f-9058f4e193fb' 
-        AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346' 
-        AuthAKVName: 'learn-codesign-vault' 
-        AuthCertName: 'AuthCert' 
-        AuthSignCertName: 'RequestSigningCert'
-        FolderPath: $(pathToPublish)
-        Pattern: '*.nupkg'
-        signConfigType: inlineSignParams
-        inlineOperation: |
-          [
-            {
-              "KeyCode": "CP-401405",
-              "OperationCode": "NuGetSign",
-              "Parameters": {},
-              "ToolName": "sign",
-              "ToolVersion": "1.0"
-            },
-            {
-              "KeyCode": "CP-401405",
-              "OperationCode": "NuGetVerify",
-              "Parameters": {},
-              "ToolName": "sign",
-              "ToolVersion": "1.0"
+        - pwsh: |
+            $npmRoot = npm root -g
+            if ($LASTEXITCODE -ne 0) {
+              throw 'Could not determine the global npm modules directory.'
             }
-          ]
+            $hostPath = Join-Path $npmRoot 'azure-functions-core-tools\bin\func.exe'
+            if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
+              throw "Azure Functions Core Tools executable not found at '$hostPath'."
+            }
+            Write-Host "##vso[task.setvariable variable=FunctionsHostExePath]$hostPath"
+          displayName: Configure FunctionsHostExePath from npm installation
 
-    - template: stages/steps/publishArtifact.yml@templates
-      parameters:
-        artifactName: 'nugets'
-        pathToPublish: $(pathToPublish)
+        - template: stages/steps/storageEmulatorCheck.yml@buildTemplates
+
+        - template: stages/steps/cosmosDbEmulatorCheck.yml@buildTemplates
+
+        - template: stages/steps/test.yml@buildTemplates
+          parameters:
+            solutionPath: $(solutionPath)
+            buildConfiguration: $(buildConfiguration)
+
+        - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@6
+          displayName: 'ESRP CodeSigning: Authenticode'
+          inputs:
+            ConnectedServiceName: $(esrpServiceConnection)
+            AppRegistrationClientId: $(esrpManagedIdentityClientId)
+            AppRegistrationTenantId: $(esrpTenantId)
+            useMsiAuthentication: true
+            esrpClientId: $(esrpClientId)
+            AuthAKVName: $(esrpKeyVaultName)
+            AuthSignCertName: $(esrpRequestSigningCertificateName)
+            FolderPath: $(solutionPath)
+            Pattern: 'Microsoft.Learn.*.dll'
+            ServiceEndpointUrl: $(esrpServiceEndpointUrl)
+            signConfigType: inlineSignParams
+            inlineOperation: $(authenticodeSigningOperations)
+
+        - task: DotNetCoreCLI@2
+          displayName: Build NuGet packages
+          inputs:
+            command: pack
+            packagesToPack: '$(solutionPath)**/Microsoft.Learn.AzureFunctionsTesting*.csproj'
+            configuration: $(buildConfiguration)
+            packDirectory: $(pathToPublish)
+            nobuild: true
+
+        - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@6
+          displayName: 'ESRP CodeSigning: Nupkg'
+          inputs:
+            ConnectedServiceName: $(esrpServiceConnection)
+            AppRegistrationClientId: $(esrpManagedIdentityClientId)
+            AppRegistrationTenantId: $(esrpTenantId)
+            useMsiAuthentication: true
+            esrpClientId: $(esrpClientId)
+            AuthAKVName: $(esrpKeyVaultName)
+            AuthSignCertName: $(esrpRequestSigningCertificateName)
+            FolderPath: $(pathToPublish)
+            Pattern: '*.nupkg'
+            ServiceEndpointUrl: $(esrpServiceEndpointUrl)
+            signConfigType: inlineSignParams
+            inlineOperation: $(nugetSigningOperations)
